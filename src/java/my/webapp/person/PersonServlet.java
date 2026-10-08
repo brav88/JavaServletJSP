@@ -9,10 +9,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.util.ArrayList;
-import java.util.List;
-import my.webapp.database.Database;
-import java.sql.*;
 
 /**
  *
@@ -21,37 +17,33 @@ import java.sql.*;
 public class PersonServlet extends HttpServlet {
 
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {        
-        try
-        {
-            Database db = new Database();
-            Connection conn = db.getConnection();
-            PreparedStatement pstat = conn.prepareStatement("SELECT * FROM Persons;");
-        
-            ResultSet rs = pstat.executeQuery();
-        
-            List<Person> personList = new ArrayList<>();
-        
-            while(rs.next()){
-                personList.add(new Person(rs.getInt("Id"), 
-                                          rs.getString("Name"), 
-                                          rs.getString("LastName"), 
-                                          rs.getString("Address"), 
-                                          rs.getInt("Age"), 
-                                          rs.getString("PhoneNumber")));           
-            }
-                     
-            request.setAttribute("personList", personList);
-            request.getRequestDispatcher("person.jsp").forward(request, response);   
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+
+        PersonDAO dao = new PersonDAO();
+        String action = request.getParameter("action");
+
+        if (action == null) {            
+            request.setAttribute("personList", dao.getAll());
+            request.getRequestDispatcher("person.jsp").forward(request, response);
         }
-        catch (SQLException ex)
-        {
-            System.getLogger(PersonServlet.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+        if (action.equals("delete")) {
+            int id = Integer.parseInt(request.getParameter("id"));
+            dao.delete(id);
+            response.sendRedirect("PersonServlet");
         }
     }
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-       
+
+        PersonDAO dao = new PersonDAO();      
+        dao.insert(new Person(0, 
+                              request.getParameter("txtname"), 
+                              request.getParameter("txtlastname"), 
+                              request.getParameter("txtaddress"), 
+                              Integer.parseInt(request.getParameter("txtage")), 
+                              request.getParameter("txtphone")));
+
+        response.sendRedirect("PersonServlet");
     }
 }
